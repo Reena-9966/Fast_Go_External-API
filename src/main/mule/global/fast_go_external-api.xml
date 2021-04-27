@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="8d402e27-12c6-4443-a836-2e920320376a" file="config\local.yaml" />
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="971e06e7-a08b-4e4d-90a6-9128c2a5cfe0" >
+		<http:listener-connection host="${http.host}" port="${http.port}" />
+	</http:listener-config>
+	<flow name="fast_go_external-apiFlow" doc:id="2a1caffc-0ab5-4300-96cd-12372fc0561b" >
+		<http:listener doc:name="Listener" doc:id="0a4ccfe6-f820-4ca9-8ff7-9e0e9f6a4e08" config-ref="HTTP_Listener_config" path="${http.path}"/>
+		<ee:transform doc:name="Transform Message" doc:id="41c54c60-e9b1-40de-a953-62f4df910f51" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="transactionId" ><![CDATA[%dw 2.0
+output application/java
+---
+attributes.headers.transactionId]]></ee:set-variable>
+				<ee:set-variable variableName="serviceType" ><![CDATA[%dw 2.0
+output application/java
+---
+attributes.uriParams.serviceType
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="a04920b4-e1ec-40a7-839a-8f7b4c085ef2" message="Request response recived for fatgo externalsystem transactionId #[vars.transactionId]"/>
+		<choice doc:name="Choice" doc:id="f6398273-97cc-46a1-a355-124aa6963648" >
+			<when expression='#[vars.serviceType == "Routes"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="5e5916f0-4edc-4132-baa7-d29e842df75e" message="Request response recived for fatgo externalsystem transactionId #[vars.transactionId]"/>
+				<flow-ref doc:name="Flow Reference" doc:id="09f83091-8dde-4d64-96f1-94413023638e" name="Fast-Go-External_-system-Get_RoutesSub_Flow"/>
+			</when>
+			<when expression='#[vars.serviceType == "schedules"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="d5cf4a15-e72b-497d-8241-c7b82fa2d081" message="Request response recived for fatgo externalsystem transactionId #[vars.transactionId]"/>
+				<flow-ref doc:name="Flow Reference" doc:id="e3d28f1c-2ab3-42a0-8e1d-48907d8da708" name="Fast-Go-External-System-Get-schedulesSub_Flow"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="89dece45-c083-491f-810b-51c5de92127e" />
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="99a6019e-f461-4d58-9e37-3f25f5fbe733" message="response sent for fatgo externalsystem transactionId #[vars.transactionId]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="2b189d82-0ecd-4575-b228-39e719847c70" >
+				<logger level="INFO" doc:name="Logger" doc:id="bcf2978f-f26c-49d0-ae2d-9a44d98efa7b" message="Error occured for  for fatgo externalsystem transactionId #[vars.transactionId]"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>
